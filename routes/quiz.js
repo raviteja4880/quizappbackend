@@ -141,18 +141,15 @@ router.post('/:id/submit', auth, async (req, res) => {
   try {
     const quizId = req.params.id;
     const userId = req.user._id;
-    const { answers, startedAt } = req.body; // 👈 Include startedAt from frontend
+    const { answers } = req.body;
 
     if (!userId) return res.status(401).json({ message: 'Unauthorized: User ID missing' });
-    if (!answers || !Array.isArray(answers))
-      return res.status(400).json({ message: 'Answers must be an array' });
+    if (!answers || !Array.isArray(answers)) return res.status(400).json({ message: 'Answers must be an array' });
 
     const quiz = await Quiz.findById(quizId);
     if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
 
-    let score = 0,
-      correctCount = 0,
-      wrongCount = 0;
+    let score = 0, correctCount = 0, wrongCount = 0;
     const userAnswers = {};
 
     quiz.questions.forEach((q, index) => {
@@ -168,12 +165,6 @@ router.post('/:id/submit', auth, async (req, res) => {
     });
 
     const percentage = (score / quiz.questions.length) * 100;
-    const submittedAt = new Date();
-
-    // Compute time spent if startedAt is given
-    const durationMinutes = startedAt
-      ? Math.floor((submittedAt - new Date(startedAt)) / 60000)
-      : null;
 
     const result = await Result.create({
       userId,
@@ -185,9 +176,6 @@ router.post('/:id/submit', auth, async (req, res) => {
       percentage,
       status: "completed",
       userAnswers,
-      startedAt: startedAt ? new Date(startedAt) : undefined,
-      submittedAt,
-      duration: durationMinutes, 
     });
 
     res.json({
@@ -197,7 +185,6 @@ router.post('/:id/submit', auth, async (req, res) => {
       percentage,
       correctCount,
       wrongCount,
-      duration: durationMinutes,
       resultId: result._id,
     });
   } catch (err) {

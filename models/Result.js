@@ -42,23 +42,16 @@ const resultSchema = new mongoose.Schema(
       default: 'completed',
     },
     userAnswers: {
-      type: Array,
+      type: Object, 
       required: true,
-    },
-    startedAt: {
-      type: Date,
     },
     submittedAt: {
       type: Date,
       default: Date.now,
     },
-    duration: {
-      type: Number,
-      default: 0,
-    },
   },
   {
-    timestamps: true,
+    timestamps: true, 
   }
 );
 
