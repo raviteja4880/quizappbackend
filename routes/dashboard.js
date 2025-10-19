@@ -4,17 +4,31 @@ const mongoose = require("mongoose");
 const auth = require("../middleware/authMiddleware");
 const Result = require("../models/Result");
 
-// GET /api/dashboard/student
 router.get("/student", auth, async (req, res) => {
   try {
-    // Allow only students
-    if (req.user.role !== "student") {
+    if (req.user.role !== "user") {
       return res.status(403).json({ message: "Access denied: Students only" });
     }
 
-    const userId = mongoose.Types.ObjectId(req.user._id);
+    const userId = new mongoose.Types.ObjectId(req.user._id);
+    const totalResults = await Result.countDocuments({});
+    const userResultsCount = await Result.countDocuments({ userId });
 
-    //  Aggregate summary stats
+    if (userResultsCount === 0) {
+      return res.json({
+        message: "No quiz results found for this student.",
+        heatmap: [],
+        trend: [],
+        summary: {
+          totalQuizzes: 0,
+          avgPercentage: 0,
+          bestQuiz: null,
+          worstQuiz: null,
+        },
+      });
+    }
+
+    // Summary Aggregation
     const summaryAgg = await Result.aggregate([
       { $match: { userId } },
       {
@@ -30,20 +44,18 @@ router.get("/student", auth, async (req, res) => {
 
     const summaryRaw = summaryAgg[0] || {};
 
-    // Fetch best/worst quiz titles
+    // Best & Worst Quizzes
     const bestQuiz = await Result.findOne({ userId })
       .sort({ percentage: -1 })
-      .limit(1)
       .populate("quizId", "title")
       .lean();
 
     const worstQuiz = await Result.findOne({ userId })
       .sort({ percentage: 1 })
-      .limit(1)
       .populate("quizId", "title")
       .lean();
 
-    //  Aggregate trend (average percentage per day)
+    // Trend (average per day)
     const trendAgg = await Result.aggregate([
       { $match: { userId } },
       {
@@ -68,7 +80,7 @@ router.get("/student", auth, async (req, res) => {
       count: r.count,
     }));
 
-    //  Aggregate heatmap (quiz submissions per day)
+    // Heatmap (submissions per day)
     const heatAgg = await Result.aggregate([
       { $match: { userId } },
       {
@@ -85,9 +97,12 @@ router.get("/student", auth, async (req, res) => {
       { $sort: { _id: 1 } },
     ]);
 
-    const heatmap = heatAgg.map((r) => ({ date: r._id, count: r.count }));
+    const heatmap = heatAgg.map((r) => ({
+      date: r._id,
+      count: r.count,
+    }));
 
-    //  Final summary object
+    // Final Summary Object
     const summary = {
       totalQuizzes: summaryRaw.totalQuizzes || 0,
       avgPercentage: summaryRaw.avgPercentage
@@ -101,9 +116,10 @@ router.get("/student", auth, async (req, res) => {
         : null,
     };
 
+    // Response
     res.json({ heatmap, trend, summary });
   } catch (err) {
-    console.error("Dashboard Error:", err);
+    console.error("❌ Dashboard Error:", err);
     res.status(500).json({ message: "Error generating dashboard", error: err.message });
   }
 });
