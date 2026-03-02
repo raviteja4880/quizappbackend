@@ -42,7 +42,7 @@ const resultSchema = new mongoose.Schema(
       default: 'completed',
     },
     userAnswers: {
-      type: Object, 
+      type: mongoose.Schema.Types.Mixed,  // ✅ Changed from Object to Mixed
       required: true,
     },
     submittedAt: {

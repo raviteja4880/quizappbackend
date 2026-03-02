@@ -3,6 +3,17 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
 
+// ✅ Validate environment variables
+if (!process.env.MONGO_URI) {
+  console.error("❌ MONGO_URI is not defined in .env file");
+  process.exit(1);
+}
+
+if (!process.env.JWT_SECRET) {
+  console.error("❌ JWT_SECRET is not defined in .env file");
+  process.exit(1);
+}
+
 const app = express();
 
 app.use(cors({

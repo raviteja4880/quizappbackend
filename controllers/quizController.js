@@ -12,7 +12,34 @@ exports.createQuiz = async (req, res) => {
     }
 
     const { title, description, timeLimit, questions } = req.body;
-    const quiz = await Quiz.create({ title, description, timeLimit, questions });
+
+    // ✅ Validate questions format
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({ message: "Questions must be a non-empty array" });
+    }
+
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      if (!q.question || !Array.isArray(q.options) || q.options.length < 2) {
+        return res.status(400).json({ message: `Question ${i + 1}: must have at least 2 options` });
+      }
+      if (typeof q.correctAnswer !== 'number' || q.correctAnswer < 0 || q.correctAnswer >= q.options.length) {
+        return res.status(400).json({ message: `Question ${i + 1}: correctAnswer index is invalid` });
+      }
+    }
+
+    // ✅ Validate timeLimit
+    if (!timeLimit || timeLimit <= 0) {
+      return res.status(400).json({ message: "timeLimit must be a positive number (in minutes)" });
+    }
+
+    const quiz = await Quiz.create({ 
+      title, 
+      description, 
+      timeLimit, 
+      questions,
+      createdBy: req.user._id  // ✅ Set createdBy to current admin
+    });
 
     res.status(201).json(quiz);
   } catch (err) {

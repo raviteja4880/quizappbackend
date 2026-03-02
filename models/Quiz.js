@@ -34,6 +34,7 @@ const quizSchema = new mongoose.Schema(
     timeLimit: {
       type: Number, // in minutes
       required: true,
+      min: 1,  // ✅ Validate positive number
     },
     questions: [questionSchema],
     createdBy: {

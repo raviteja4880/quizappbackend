@@ -17,9 +17,8 @@ exports.getMyResults = async (req, res) => {
       wrongCount: r.wrongCount,
       percentage: r.percentage,
       status: r.status,
-      duration: r.duration,
       submittedAt: r.submittedAt,
-    }));
+    }));  // ✅ Removed non-existent duration field
 
     res.json(formatted);
   } catch (err) {
